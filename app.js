@@ -4,6 +4,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const emptyState = document.getElementById('emptyState');
     const addBtn = document.getElementById('addBtn');
     const searchInput = document.getElementById('searchInput');
+    const quizBtn = document.getElementById('quizBtn');
+    
+    // Quiz Modal Elements
+    const quizModal = document.getElementById('quizModal');
+    const closeQuizModal = document.getElementById('closeQuizModal');
+    const quizStateError = document.getElementById('quizStateError');
+    const quizContainer = document.getElementById('quizContainer');
+    const quizChoices = document.getElementById('quizChoices');
+    const quizResult = document.getElementById('quizResult');
+    const quizResultMessage = document.getElementById('quizResultMessage');
+    const quizResultDetail = document.getElementById('quizResultDetail');
+    const nextQuizBtn = document.getElementById('nextQuizBtn');
     
     // Add/Edit Modal
     const addModal = document.getElementById('addModal');
@@ -28,16 +40,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // State
     let people = JSON.parse(localStorage.getItem('namelink_people')) || [];
     let currentDetailId = null;
+    let currentQuizPerson = null;
 
     // Initialize
     renderPeople();
 
     // Event Listeners
     addBtn.addEventListener('click', () => openAddModal());
+    quizBtn.addEventListener('click', openQuiz);
     closeAddModal.addEventListener('click', closeModals);
     closeDetailModal.addEventListener('click', closeModals);
+    closeQuizModal.addEventListener('click', closeModals);
     personForm.addEventListener('submit', handleFormSubmit);
     searchInput.addEventListener('input', handleSearch);
+    nextQuizBtn.addEventListener('click', generateQuiz);
     
     editPersonBtn.addEventListener('click', () => {
         closeModals();
@@ -53,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Close modals on outside click
     window.addEventListener('click', (e) => {
-        if (e.target === addModal || e.target === detailModal) {
+        if (e.target === addModal || e.target === detailModal || e.target === quizModal) {
             closeModals();
         }
     });
@@ -178,6 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function closeModals() {
         addModal.classList.add('hidden');
         detailModal.classList.add('hidden');
+        quizModal.classList.add('hidden');
     }
 
     function handleFormSubmit(e) {
@@ -220,5 +237,95 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function handleSearch(e) {
         renderPeople(e.target.value);
+    }
+
+    // --- Quiz Logic ---
+    function openQuiz() {
+        quizModal.classList.remove('hidden');
+        
+        if (people.length < 2) {
+            quizStateError.classList.remove('hidden');
+            quizContainer.classList.add('hidden');
+        } else {
+            quizStateError.classList.add('hidden');
+            quizContainer.classList.remove('hidden');
+            generateQuiz();
+        }
+    }
+
+    function generateQuiz() {
+        // Reset UI
+        quizResult.classList.add('hidden');
+        quizChoices.innerHTML = '';
+        
+        // Select random target person
+        const targetIndex = Math.floor(Math.random() * people.length);
+        currentQuizPerson = people[targetIndex];
+        
+        // Fill hints
+        document.getElementById('quizHintOrigin').textContent = currentQuizPerson.origin || '（不明）';
+        document.getElementById('quizHintAffiliation').textContent = currentQuizPerson.affiliation || '（不明）';
+        
+        const formatTags = (csvStr, colorClass) => {
+            const arr = csvStr.split(',').map(s => s.trim()).filter(s => s);
+            if (arr.length === 0) return '（なし）';
+            return arr.map(tag => `<span class="tag ${colorClass}">${tag}</span>`).join('');
+        };
+        
+        document.getElementById('quizHintLikes').innerHTML = formatTags(currentQuizPerson.likes, 'tag-like');
+        document.getElementById('quizHintDislikes').innerHTML = formatTags(currentQuizPerson.dislikes, '');
+        
+        // Generate choices (1 correct, up to 3 random wrong)
+        let choices = [currentQuizPerson];
+        let availableWrong = people.filter(p => p.id !== currentQuizPerson.id);
+        
+        // Shuffle available wrong choices
+        availableWrong.sort(() => 0.5 - Math.random());
+        
+        // Pick up to 3 wrong choices
+        const wrongCount = Math.min(3, availableWrong.length);
+        for (let i = 0; i < wrongCount; i++) {
+            choices.push(availableWrong[i]);
+        }
+        
+        // Shuffle all choices
+        choices.sort(() => 0.5 - Math.random());
+        
+        // Render choices
+        choices.forEach(person => {
+            const btn = document.createElement('button');
+            btn.className = 'quiz-choice-btn';
+            btn.textContent = person.name;
+            btn.onclick = () => handleQuizChoice(btn, person.id);
+            quizChoices.appendChild(btn);
+        });
+    }
+
+    function handleQuizChoice(btn, selectedId) {
+        // Disable all buttons
+        const allBtns = quizChoices.querySelectorAll('.quiz-choice-btn');
+        allBtns.forEach(b => b.disabled = true);
+        
+        const isCorrect = (selectedId === currentQuizPerson.id);
+        
+        if (isCorrect) {
+            btn.classList.add('correct');
+            quizResult.className = 'quiz-result success';
+            quizResultMessage.textContent = '🎉 正解！';
+            quizResultDetail.textContent = 'バッチリですね！';
+        } else {
+            btn.classList.add('wrong');
+            // Find and highlight correct button
+            allBtns.forEach(b => {
+                if (b.textContent === currentQuizPerson.name) {
+                    b.classList.add('correct');
+                }
+            });
+            quizResult.className = 'quiz-result error';
+            quizResultMessage.textContent = '😢 残念…';
+            quizResultDetail.textContent = `正解は「${currentQuizPerson.name}」さんでした！`;
+        }
+        
+        quizResult.classList.remove('hidden');
     }
 });
