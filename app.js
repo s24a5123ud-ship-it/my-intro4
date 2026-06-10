@@ -352,14 +352,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
             });
 
-            if (!response.ok) throw new Error('API Error');
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error?.message || `HTTP error! status: ${response.status}`);
+            }
 
             const data = await response.json();
             const text = data.candidates[0].content.parts[0].text;
             
             // Parse hints
             currentHints = text.split('\n').map(line => line.replace(/^[-*•]\s*/, '').trim()).filter(line => line);
-            if (currentHints.length === 0) throw new Error('No hints generated');
+            if (currentHints.length === 0) throw new Error('AIがヒントを生成できませんでした。');
             
             currentHintIndex = 0;
             
@@ -387,7 +390,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error(error);
             quizLoading.classList.add('hidden');
-            quizStateError.querySelector('p').textContent = 'AIからのヒント生成に失敗しました。APIキーを確認するか、通信環境の良いところでお試しください。';
+            quizStateError.querySelector('p').textContent = `エラー: ${error.message}`;
             quizStateError.classList.remove('hidden');
         }
     }
