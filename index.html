@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NameLink - 人脈メモアプリ</title>
+    <title>NameLink - 人脈メモアプリ v3</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
@@ -13,13 +13,17 @@
 <body>
     <header>
         <div class="header-container">
-            <h1><i class="fa-solid fa-link"></i> NameLink</h1>
+            <h1><i class="fa-solid fa-link"></i> NameLink <span style="font-size: 0.8rem; opacity: 0.7;">v3</span></h1>
             <div class="search-bar">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="searchInput" placeholder="名前やタグで検索...">
+                <input type="text" id="searchInput" placeholder="名前や特徴で検索...">
             </div>
-            <button id="quizBtn" class="btn-secondary"><i class="fa-solid fa-dice"></i> クイズ</button>
-            <button id="addBtn" class="btn-primary"><i class="fa-solid fa-plus"></i> 追加</button>
+            <div class="header-actions">
+                <button id="statsBtn" class="btn-icon" title="成績データ"><i class="fa-solid fa-chart-simple"></i></button>
+                <button id="settingsBtn" class="btn-icon" title="API設定"><i class="fa-solid fa-gear"></i></button>
+                <button id="quizBtn" class="btn-secondary"><i class="fa-solid fa-dice"></i> クイズ</button>
+                <button id="addBtn" class="btn-primary"><i class="fa-solid fa-plus"></i> 追加</button>
+            </div>
         </div>
     </header>
 
@@ -52,12 +56,8 @@
                     <input type="text" id="affiliation" placeholder="例: 〇〇株式会社 営業部 / テニスサークル">
                 </div>
                 <div class="form-group">
-                    <label for="likes">好きなもの</label>
-                    <input type="text" id="likes" placeholder="例: コーヒー, 犬, 読書 (カンマ区切り)">
-                </div>
-                <div class="form-group">
-                    <label for="dislikes">嫌いなもの</label>
-                    <input type="text" id="dislikes" placeholder="例: セロリ, 満員電車">
+                    <label for="features">その人の特徴</label>
+                    <textarea id="features" rows="4" placeholder="例: コーヒーが好き。いつも笑顔で挨拶してくれる。最近ゴルフを始めたらしい。"></textarea>
                 </div>
                 <input type="hidden" id="editId">
                 <button type="submit" class="btn-primary btn-full">保存する</button>
@@ -89,17 +89,10 @@
                     </div>
                 </div>
                 <div class="detail-item">
-                    <i class="fa-solid fa-heart"></i>
+                    <i class="fa-solid fa-user-tag"></i>
                     <div>
-                        <span class="label">好きなもの</span>
-                        <div id="detailLikes" class="tags">-</div>
-                    </div>
-                </div>
-                <div class="detail-item">
-                    <i class="fa-solid fa-heart-crack"></i>
-                    <div>
-                        <span class="label">嫌いなもの</span>
-                        <div id="detailDislikes" class="tags">-</div>
+                        <span class="label">特徴</span>
+                        <p id="detailFeatures" class="features-text">-</p>
                     </div>
                 </div>
             </div>
@@ -117,15 +110,20 @@
             <h2 class="quiz-title"><i class="fa-solid fa-circle-question"></i> この人は誰？</h2>
             
             <div id="quizStateError" class="empty-state hidden">
-                <p>クイズを始めるには、最低2人以上の登録が必要です。</p>
+                <p>クイズを始めるには、最低2人以上の登録とAPIキーの設定が必要です。</p>
             </div>
 
-            <div id="quizContainer">
-                <div class="quiz-hints">
-                    <div class="hint-item"><span class="label">出身:</span> <span id="quizHintOrigin"></span></div>
-                    <div class="hint-item"><span class="label">所属:</span> <span id="quizHintAffiliation"></span></div>
-                    <div class="hint-item"><span class="label">好きなもの:</span> <span id="quizHintLikes" class="tags"></span></div>
-                    <div class="hint-item"><span class="label">嫌いなもの:</span> <span id="quizHintDislikes" class="tags"></span></div>
+            <div id="quizLoading" class="empty-state hidden">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <p>AIがヒントを生成中...</p>
+            </div>
+
+            <div id="quizContainer" class="hidden">
+                <div class="quiz-hints-area">
+                    <ul id="quizHintsList" class="quiz-hints-list">
+                        <!-- AI Hints will be appended here one by one -->
+                    </ul>
+                    <button id="showNextHintBtn" class="btn-secondary btn-full hint-btn hidden">次のヒントを見る <i class="fa-solid fa-chevron-down"></i></button>
                 </div>
                 
                 <div class="quiz-choices" id="quizChoices">
@@ -137,6 +135,46 @@
                     <p id="quizResultDetail"></p>
                     <button id="nextQuizBtn" class="btn-primary btn-full">次の問題へ <i class="fa-solid fa-arrow-right"></i></button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn" id="closeSettingsModal">&times;</span>
+            <h2><i class="fa-solid fa-gear"></i> 設定</h2>
+            <form id="settingsForm">
+                <div class="form-group">
+                    <label for="apiKey">Gemini API キー</label>
+                    <input type="password" id="apiKey" placeholder="AIの利用に必要なAPIキーを入力">
+                    <small class="help-text">Google AI Studioから無料で取得できます。このキーはブラウザにのみ保存されます。</small>
+                </div>
+                <button type="submit" class="btn-primary btn-full">保存する</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Stats Modal -->
+    <div id="statsModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close-btn" id="closeStatsModal">&times;</span>
+            <h2><i class="fa-solid fa-chart-simple"></i> クイズ成績データ</h2>
+            
+            <div class="stats-overview">
+                <div class="stat-box">
+                    <div class="stat-label">総プレイ回数</div>
+                    <div class="stat-value" id="statTotalGames">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">全体の正答率</div>
+                    <div class="stat-value" id="statAccuracy">0%</div>
+                </div>
+            </div>
+
+            <h3 class="stats-subtitle">人物別データ（苦手な順）</h3>
+            <div class="stats-list" id="statsList">
+                <!-- Person stats injected here -->
             </div>
         </div>
     </div>
