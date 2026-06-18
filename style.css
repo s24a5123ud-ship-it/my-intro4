@@ -8,14 +8,22 @@
     --text-light: #8e8e8e;
     --border-color: #e8e6e1;
     
-    /* 好き・嫌いなどのアクセントカラー (淡め) */
-    --accent-like: #e8d5c4;    /* 淡いオレンジ/ピンク系 */
-    --accent-dislike: #d1d5db; /* 淡いグレー */
-    
     --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
     --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.06);
     --radius-md: 16px;
     --radius-lg: 24px;
+}
+
+[data-theme="dark"] {
+    --bg-color: #1a1a1a;
+    --surface-color: #2d2d2d;
+    --primary-color: #7b94a8;
+    --primary-hover: #98b0c0;
+    --text-main: #e0e0e0;
+    --text-light: #a0a0a0;
+    --border-color: #404040;
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
 * {
@@ -29,6 +37,7 @@ body {
     background-color: var(--bg-color);
     color: var(--text-main);
     line-height: 1.6;
+    transition: background-color 0.3s, color 0.3s;
 }
 
 /* Header */
@@ -39,6 +48,7 @@ header {
     position: sticky;
     top: 0;
     z-index: 100;
+    transition: background-color 0.3s;
 }
 
 .header-container {
@@ -128,6 +138,9 @@ button {
 .btn-secondary:hover {
     background-color: #d8d6d1;
 }
+[data-theme="dark"] .btn-secondary:hover {
+    background-color: #555;
+}
 
 .btn-danger {
     background-color: #e5b3b3;
@@ -161,6 +174,60 @@ button {
     background-color: rgba(181, 199, 211, 0.1);
 }
 
+/* AI Buttons */
+.ai-input-actions {
+    background-color: rgba(181, 199, 211, 0.1);
+    padding: 16px;
+    border-radius: var(--radius-md);
+    margin-bottom: 20px;
+    border: 1px dashed var(--primary-color);
+}
+.ai-input-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 12px;
+}
+.ai-btn-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.btn-ai {
+    flex: 1;
+    min-width: 140px;
+    background-color: var(--surface-color);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-block;
+}
+.btn-ai i {
+    color: var(--primary-color);
+    margin-right: 6px;
+}
+.btn-ai:hover {
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow-sm);
+}
+.ai-loading {
+    text-align: center;
+    color: var(--primary-color);
+    padding: 16px;
+    font-weight: 700;
+    animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
 /* Main Content */
 main {
     max-width: 1000px;
@@ -170,14 +237,31 @@ main {
 
 .empty-state {
     text-align: center;
-    padding: 60px 20px;
+    padding: 40px 20px;
     color: var(--text-light);
 }
 
-.empty-state i {
+.empty-state > i {
     font-size: 3rem;
     margin-bottom: 16px;
     color: var(--border-color);
+}
+
+.sample-cards-preview {
+    margin-top: 40px;
+    text-align: left;
+    border-top: 1px dashed var(--border-color);
+    padding-top: 30px;
+}
+.sample-title {
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--text-main);
+}
+.sample-grid {
+    opacity: 0.5;
+    pointer-events: none;
+    filter: grayscale(0.5);
 }
 
 .hidden {
@@ -254,12 +338,6 @@ main {
     border: 1px solid var(--border-color);
 }
 
-.tag-like {
-    background-color: var(--accent-like);
-    border-color: transparent;
-    color: #7a634e;
-}
-
 /* Modals */
 .modal {
     position: fixed;
@@ -267,7 +345,7 @@ main {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: rgba(0, 0, 0, 0.4);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -294,6 +372,20 @@ main {
     overflow-y: auto;
     transform: translateY(0);
     transition: transform 0.3s ease;
+}
+
+.network-content {
+    max-width: 90%;
+    height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+.network-graph-container {
+    flex: 1;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background-color: var(--bg-color);
+    margin-top: 16px;
 }
 
 .modal.hidden .modal-content {
@@ -336,7 +428,8 @@ main {
     color: #e5b3b3;
 }
 
-.form-group input,
+.form-group input[type="text"],
+.form-group input[type="password"],
 .form-group textarea {
     width: 100%;
     padding: 12px 16px;
@@ -365,6 +458,27 @@ main {
     font-size: 0.8rem;
     color: var(--text-light);
     margin-top: 4px;
+}
+
+/* Connections List Checkboxes */
+.connections-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    max-height: 150px;
+    overflow-y: auto;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--bg-color);
+}
+.connections-list label {
+    margin-bottom: 0;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
 }
 
 /* Detail Modal Styles */
@@ -432,10 +546,27 @@ main {
 }
 
 /* Quiz Styles */
-.quiz-title {
-    color: var(--primary-color);
-    text-align: center;
+.quiz-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 24px;
+}
+.quiz-title {
+    margin-bottom: 0 !important;
+}
+.combo-display {
+    background-color: #ffd700;
+    color: #b8860b;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    animation: bounce 0.5s;
+}
+@keyframes bounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
 }
 
 .quiz-hints-area {
@@ -537,7 +668,7 @@ main {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Stats Modal */
+/* Stats Modal & Badges */
 .stats-overview {
     display: flex;
     gap: 16px;
@@ -596,6 +727,43 @@ main {
 .stats-item-score {
     color: var(--text-light);
     font-size: 0.9rem;
+}
+
+/* Badges */
+.badges-section {
+    margin-bottom: 24px;
+}
+.badges-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.badges-container.empty-badges {
+    opacity: 0.6;
+}
+.badge {
+    background-color: #ffd700;
+    color: #8b6508;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 2px 4px rgba(255, 215, 0, 0.2);
+}
+.badge.badge-silver {
+    background-color: #e0e0e0;
+    color: #4a4a4a;
+}
+.badge.badge-bronze {
+    background-color: #cd7f32;
+    color: #fff;
+}
+#detailBadges {
+    justify-content: center;
+    margin-bottom: 16px;
 }
 
 @media (max-width: 600px) {

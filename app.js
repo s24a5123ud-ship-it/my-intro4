@@ -1,24 +1,32 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- DOM Elements ---
+    const htmlElement = document.documentElement;
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
     const peopleGrid = document.getElementById('peopleGrid');
     const emptyState = document.getElementById('emptyState');
     const addBtn = document.getElementById('addBtn');
     const searchInput = document.getElementById('searchInput');
     const quizBtn = document.getElementById('quizBtn');
-    const settingsBtn = document.getElementById('settingsBtn');
     const statsBtn = document.getElementById('statsBtn');
+    const networkBtn = document.getElementById('networkBtn');
+    const settingsBtn = document.getElementById('settingsBtn');
     
     // Add/Edit Modal
     const addModal = document.getElementById('addModal');
     const closeAddModal = document.getElementById('closeAddModal');
     const personForm = document.getElementById('personForm');
     const modalTitle = document.getElementById('modalTitle');
-    
     const nameInput = document.getElementById('name');
     const originInput = document.getElementById('origin');
     const affiliationInput = document.getElementById('affiliation');
     const featuresInput = document.getElementById('features');
     const editIdInput = document.getElementById('editId');
+    const connectionsCheckboxes = document.getElementById('connectionsCheckboxes');
+    
+    // AI Inputs
+    const voiceInputBtn = document.getElementById('voiceInputBtn');
+    const imageInput = document.getElementById('imageInput');
+    const aiLoading = document.getElementById('aiLoading');
     
     // Detail Modal
     const detailModal = document.getElementById('detailModal');
@@ -26,15 +34,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const editPersonBtn = document.getElementById('editPersonBtn');
     const deletePersonBtn = document.getElementById('deletePersonBtn');
     
+    // Stats Modal
+    const statsModal = document.getElementById('statsModal');
+    const closeStatsModal = document.getElementById('closeStatsModal');
+    
+    // Network Modal
+    const networkModal = document.getElementById('networkModal');
+    const closeNetworkModal = document.getElementById('closeNetworkModal');
+    const networkGraphContainer = document.getElementById('networkGraph');
+
     // Settings Modal
     const settingsModal = document.getElementById('settingsModal');
     const closeSettingsModal = document.getElementById('closeSettingsModal');
     const settingsForm = document.getElementById('settingsForm');
     const apiKeyInput = document.getElementById('apiKey');
-
-    // Stats Modal
-    const statsModal = document.getElementById('statsModal');
-    const closeStatsModal = document.getElementById('closeStatsModal');
 
     // Quiz Elements
     const quizModal = document.getElementById('quizModal');
@@ -50,52 +63,72 @@ document.addEventListener('DOMContentLoaded', () => {
     const quizResultDetail = document.getElementById('quizResultDetail');
     const nextQuizBtn = document.getElementById('nextQuizBtn');
     
+    const comboDisplay = document.getElementById('comboDisplay');
+    const comboCountSpan = document.getElementById('comboCount');
+    
     // --- State ---
-    let people = JSON.parse(localStorage.getItem('namelink_people_v3')) || [];
-    let stats = JSON.parse(localStorage.getItem('namelink_stats_v3')) || {};
+    let people = JSON.parse(localStorage.getItem('namelink_people_v4')) || [];
+    let stats = JSON.parse(localStorage.getItem('namelink_stats_v4')) || { people: {}, global: { maxCombo: 0 } };
     let apiKey = localStorage.getItem('namelink_gemini_apikey') || '';
     
     let currentDetailId = null;
     let currentQuizPerson = null;
     let currentHints = [];
     let currentHintIndex = 0;
+    let currentCombo = 0;
+    let networkInstance = null;
 
-    // Migrate old v2 data if exists
+    // Migrate old v3 data if v4 is empty
     if (people.length === 0) {
-        const oldPeople = JSON.parse(localStorage.getItem('namelink_people'));
+        const oldPeople = JSON.parse(localStorage.getItem('namelink_people_v3'));
         if (oldPeople && oldPeople.length > 0) {
             people = oldPeople.map(p => ({
-                id: p.id,
-                name: p.name,
-                origin: p.origin || '',
-                affiliation: p.affiliation || '',
-                features: `好きなもの: ${p.likes || ''}\n嫌いなもの: ${p.dislikes || ''}`,
-                createdAt: p.createdAt || Date.now()
+                ...p,
+                connections: p.connections || []
             }));
             savePeople();
         }
+    }
+    // Migrate old stats
+    if (!stats.global) {
+        const oldStats = JSON.parse(localStorage.getItem('namelink_stats_v3'));
+        stats = { people: oldStats || {}, global: { maxCombo: 0 } };
+        saveStats();
+    }
+
+    // --- Dark Mode Initialization ---
+    const savedTheme = localStorage.getItem('namelink_theme');
+    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        htmlElement.setAttribute('data-theme', 'dark');
+        themeToggleBtn.innerHTML = '<i class="fa-solid fa-sun"></i>';
     }
 
     // Initialize
     renderPeople();
 
     // --- Event Listeners ---
+    themeToggleBtn.addEventListener('click', toggleTheme);
     addBtn.addEventListener('click', () => openAddModal());
     quizBtn.addEventListener('click', openQuiz);
-    settingsBtn.addEventListener('click', openSettings);
     statsBtn.addEventListener('click', openStats);
+    networkBtn.addEventListener('click', openNetwork);
+    settingsBtn.addEventListener('click', openSettings);
     
     closeAddModal.addEventListener('click', closeModals);
     closeDetailModal.addEventListener('click', closeModals);
     closeQuizModal.addEventListener('click', closeModals);
-    closeSettingsModal.addEventListener('click', closeModals);
     closeStatsModal.addEventListener('click', closeModals);
+    closeNetworkModal.addEventListener('click', closeModals);
+    closeSettingsModal.addEventListener('click', closeModals);
     
     personForm.addEventListener('submit', handleFormSubmit);
     settingsForm.addEventListener('submit', handleSettingsSubmit);
     searchInput.addEventListener('input', handleSearch);
     nextQuizBtn.addEventListener('click', generateQuiz);
     showNextHintBtn.addEventListener('click', showNextHint);
+    
+    voiceInputBtn.addEventListener('click', startVoiceInput);
+    imageInput.addEventListener('change', handleImageInput);
     
     editPersonBtn.addEventListener('click', () => {
         closeModals();
@@ -110,47 +143,46 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     window.addEventListener('click', (e) => {
-        if (e.target.classList.contains('modal')) {
-            closeModals();
-        }
+        if (e.target.classList.contains('modal')) closeModals();
     });
 
     // --- Core Functions ---
-    function savePeople() {
-        localStorage.setItem('namelink_people_v3', JSON.stringify(people));
-    }
-    function saveStats() {
-        localStorage.setItem('namelink_stats_v3', JSON.stringify(stats));
+    function savePeople() { localStorage.setItem('namelink_people_v4', JSON.stringify(people)); }
+    function saveStats() { localStorage.setItem('namelink_stats_v4', JSON.stringify(stats)); }
+
+    function toggleTheme() {
+        if (htmlElement.getAttribute('data-theme') === 'dark') {
+            htmlElement.removeAttribute('data-theme');
+            themeToggleBtn.innerHTML = '<i class="fa-solid fa-moon"></i>';
+            localStorage.setItem('namelink_theme', 'light');
+        } else {
+            htmlElement.setAttribute('data-theme', 'dark');
+            themeToggleBtn.innerHTML = '<i class="fa-solid fa-sun"></i>';
+            localStorage.setItem('namelink_theme', 'dark');
+        }
     }
 
     function renderPeople(filterText = '') {
         peopleGrid.innerHTML = '';
-        
         const filteredPeople = people.filter(p => {
             const searchText = filterText.toLowerCase();
             const fullText = `${p.name} ${p.origin} ${p.affiliation} ${p.features}`.toLowerCase();
             return fullText.includes(searchText);
         });
 
-        if (filteredPeople.length === 0) {
+        if (filteredPeople.length === 0 && filterText === '') {
             emptyState.classList.remove('hidden');
         } else {
             emptyState.classList.add('hidden');
-            
             filteredPeople.forEach(person => {
                 const card = document.createElement('div');
                 card.className = 'card';
                 card.onclick = () => openDetailModal(person.id);
                 
                 const initial = person.name.charAt(0);
-                
                 let tagsHTML = '';
-                if (person.affiliation) {
-                    tagsHTML += `<span class="tag">${person.affiliation.substring(0, 10)}</span>`;
-                }
-                if (person.origin) {
-                    tagsHTML += `<span class="tag">${person.origin}</span>`;
-                }
+                if (person.affiliation) tagsHTML += `<span class="tag">${person.affiliation.substring(0, 10)}</span>`;
+                if (person.origin) tagsHTML += `<span class="tag">${person.origin}</span>`;
 
                 card.innerHTML = `
                     <div class="card-header">
@@ -160,18 +192,30 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="card-subtitle">${person.affiliation || '所属なし'}</div>
                         </div>
                     </div>
-                    <div class="card-tags">
-                        ${tagsHTML}
-                    </div>
+                    <div class="card-tags">${tagsHTML}</div>
                 `;
                 peopleGrid.appendChild(card);
             });
         }
     }
 
+    function generateConnectionsCheckboxes(currentConnections = []) {
+        connectionsCheckboxes.innerHTML = '';
+        people.forEach(p => {
+            if (p.id === editIdInput.value) return; // exclude self
+            const checked = currentConnections.includes(p.id) ? 'checked' : '';
+            connectionsCheckboxes.innerHTML += `
+                <label>
+                    <input type="checkbox" value="${p.id}" ${checked}> ${p.name}
+                </label>
+            `;
+        });
+    }
+
     function openAddModal(id = null) {
         personForm.reset();
         editIdInput.value = '';
+        aiLoading.classList.add('hidden');
         
         if (id) {
             const person = people.find(p => p.id === id);
@@ -182,25 +226,43 @@ document.addEventListener('DOMContentLoaded', () => {
                 affiliationInput.value = person.affiliation;
                 featuresInput.value = person.features;
                 editIdInput.value = person.id;
+                generateConnectionsCheckboxes(person.connections || []);
             }
         } else {
             modalTitle.textContent = '新しい人を登録';
+            generateConnectionsCheckboxes([]);
         }
         
         addModal.classList.remove('hidden');
-        nameInput.focus();
     }
 
     function openDetailModal(id) {
         const person = people.find(p => p.id === id);
         if (!person) return;
-        
         currentDetailId = id;
+        
         document.getElementById('detailAvatar').textContent = person.name.charAt(0);
         document.getElementById('detailName').textContent = person.name;
         document.getElementById('detailOrigin').textContent = person.origin || '-';
         document.getElementById('detailAffiliation').textContent = person.affiliation || '-';
         document.getElementById('detailFeatures').textContent = person.features || '-';
+        
+        const connNames = (person.connections || []).map(cid => {
+            const p = people.find(x => x.id === cid);
+            return p ? p.name : null;
+        }).filter(n => n);
+        
+        document.getElementById('detailConnections').innerHTML = connNames.length > 0 
+            ? connNames.map(n => `<span class="tag">${n}</span>`).join('') 
+            : '-';
+            
+        // Calculate Badges for this person
+        const pStats = stats.people[id] || {correct: 0, wrong: 0};
+        const total = pStats.correct + pStats.wrong;
+        let badgesHTML = '';
+        if (total >= 5 && pStats.correct/total >= 0.8) badgesHTML += '<span class="badge badge-gold"><i class="fa-solid fa-crown"></i> 完璧！</span>';
+        if (pStats.wrong >= 3) badgesHTML += '<span class="badge badge-bronze"><i class="fa-solid fa-triangle-exclamation"></i> 復習が必要</span>';
+        document.getElementById('detailBadges').innerHTML = badgesHTML;
         
         detailModal.classList.remove('hidden');
     }
@@ -211,12 +273,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleFormSubmit(e) {
         e.preventDefault();
+        
+        const selectedConns = Array.from(connectionsCheckboxes.querySelectorAll('input:checked')).map(cb => cb.value);
+        
         const newPerson = {
             id: editIdInput.value || Date.now().toString(),
             name: nameInput.value.trim(),
             origin: originInput.value.trim(),
             affiliation: affiliationInput.value.trim(),
             features: featuresInput.value.trim(),
+            connections: selectedConns,
             createdAt: Date.now()
         };
         
@@ -227,6 +293,14 @@ document.addEventListener('DOMContentLoaded', () => {
             people.push(newPerson);
         }
         
+        // Reciprocate connections
+        selectedConns.forEach(cid => {
+            const p = people.find(x => x.id === cid);
+            if (p && !p.connections.includes(newPerson.id)) {
+                p.connections.push(newPerson.id);
+            }
+        });
+        
         people.sort((a, b) => b.createdAt - a.createdAt);
         savePeople();
         renderPeople(searchInput.value);
@@ -235,6 +309,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function deletePerson(id) {
         people = people.filter(p => p.id !== id);
+        // remove from others connections
+        people.forEach(p => {
+            if(p.connections) p.connections = p.connections.filter(cid => cid !== id);
+        });
         savePeople();
         renderPeople(searchInput.value);
     }
@@ -243,7 +321,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderPeople(e.target.value);
     }
 
-    // --- Settings & Stats ---
+    // --- Settings ---
     function openSettings() {
         apiKeyInput.value = apiKey;
         settingsModal.classList.remove('hidden');
@@ -257,14 +335,121 @@ document.addEventListener('DOMContentLoaded', () => {
         alert('設定を保存しました。');
     }
 
+    // --- AI Input (Voice & Image) ---
+    async function callGeminiForInput(prompt, base64Image = null) {
+        if (!apiKey) {
+            alert('AI自動入力を使用するには、設定（歯車アイコン）からAPIキーを登録してください。');
+            return null;
+        }
+        aiLoading.classList.remove('hidden');
+        
+        let parts = [{ text: prompt }];
+        if (base64Image) {
+            const mimeType = base64Image.match(/data:(.*?);base64/)[1];
+            const data = base64Image.split(',')[1];
+            parts.push({
+                inlineData: { mimeType: mimeType, data: data }
+            });
+        }
+
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: parts }],
+                    generationConfig: { responseMimeType: "application/json" }
+                })
+            });
+            if (!response.ok) throw new Error('API Error');
+            const data = await response.json();
+            aiLoading.classList.add('hidden');
+            return JSON.parse(data.candidates[0].content.parts[0].text);
+        } catch (error) {
+            console.error(error);
+            aiLoading.classList.add('hidden');
+            alert('AIの解析に失敗しました。APIキーを確認してください。');
+            return null;
+        }
+    }
+
+    function startVoiceInput() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert('お使いのブラウザは音声入力に対応していません。(ChromeまたはSafari等をご利用ください)');
+            return;
+        }
+        
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'ja-JP';
+        recognition.interimResults = false;
+        
+        voiceInputBtn.innerHTML = '<i class="fa-solid fa-microphone"></i> 録音中...';
+        voiceInputBtn.style.color = '#dc3545';
+        
+        recognition.onresult = async (event) => {
+            voiceInputBtn.innerHTML = '<i class="fa-solid fa-microphone"></i> 音声で入力';
+            voiceInputBtn.style.color = '';
+            const transcript = event.results[0][0].transcript;
+            
+            const prompt = `以下の音声を解析し、人物情報を抽出してJSONで返してください。
+            フォーマット: {"name": "名前", "origin": "出身地", "affiliation": "所属や役職", "features": "その他の特徴や会話内容など"}
+            該当しない項目は空文字("")にしてください。
+            
+            音声データ: "${transcript}"`;
+            
+            const result = await callGeminiForInput(prompt);
+            if (result) fillFormWithAiResult(result);
+        };
+        
+        recognition.onerror = (event) => {
+            voiceInputBtn.innerHTML = '<i class="fa-solid fa-microphone"></i> 音声で入力';
+            voiceInputBtn.style.color = '';
+            alert('音声認識エラー: ' + event.error);
+        };
+        
+        recognition.start();
+    }
+
+    function handleImageInput(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            const base64 = event.target.result;
+            const prompt = `添付した画像（名刺やSNSプロフィールのスクリーンショット）から人物情報を抽出し、JSONで返してください。
+            フォーマット: {"name": "名前", "origin": "出身地や住所", "affiliation": "会社名や役職、所属", "features": "画像から読み取れるその他の情報、自己紹介文など"}
+            該当しない項目は空文字("")にしてください。`;
+            
+            const result = await callGeminiForInput(prompt, base64);
+            if (result) fillFormWithAiResult(result);
+            imageInput.value = ''; // reset
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function fillFormWithAiResult(data) {
+        if (data.name) nameInput.value = data.name;
+        if (data.origin) originInput.value = data.origin;
+        if (data.affiliation) affiliationInput.value = data.affiliation;
+        if (data.features) {
+            featuresInput.value = featuresInput.value 
+                ? featuresInput.value + '\n' + data.features 
+                : data.features;
+        }
+    }
+
+    // --- Stats & Gamification ---
     function openStats() {
-        // Calculate totals
         let totalGames = 0;
         let totalCorrect = 0;
         let peopleStats = [];
 
-        people.forEach(p => {
-            const stat = stats[p.id] || { correct: 0, wrong: 0 };
+        Object.keys(stats.people).forEach(id => {
+            const p = people.find(x => x.id === id);
+            if (!p) return;
+            const stat = stats.people[id];
             const games = stat.correct + stat.wrong;
             totalGames += games;
             totalCorrect += stat.correct;
@@ -279,10 +464,29 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        const overallAccuracy = totalGames > 0 ? Math.round((totalCorrect / totalGames) * 100) : 0;
         document.getElementById('statTotalGames').textContent = totalGames;
-        document.getElementById('statAccuracy').textContent = totalGames > 0 ? Math.round((totalCorrect / totalGames) * 100) + '%' : '0%';
+        document.getElementById('statAccuracy').textContent = overallAccuracy + '%';
+        document.getElementById('statMaxCombo').textContent = stats.global.maxCombo || 0;
 
-        // Sort by worst accuracy first, then by most wrong
+        // Calculate Global Badges
+        const badgesContainer = document.getElementById('userBadges');
+        let badgesHTML = '';
+        if (totalGames >= 10) badgesHTML += '<span class="badge"><i class="fa-solid fa-medal"></i> ルーキー</span>';
+        if (totalGames >= 50) badgesHTML += '<span class="badge badge-silver"><i class="fa-solid fa-medal"></i> ベテラン</span>';
+        if (overallAccuracy >= 90 && totalGames >= 20) badgesHTML += '<span class="badge"><i class="fa-solid fa-brain"></i> 記憶力マスター</span>';
+        if (stats.global.maxCombo >= 10) badgesHTML += '<span class="badge badge-gold"><i class="fa-solid fa-fire"></i> コンボ王</span>';
+        if (people.length >= 20) badgesHTML += '<span class="badge"><i class="fa-solid fa-users"></i> 人脈クリエイター</span>';
+
+        if (badgesHTML) {
+            badgesContainer.innerHTML = badgesHTML;
+            badgesContainer.classList.remove('empty-badges');
+        } else {
+            badgesContainer.innerHTML = '<p class="text-light">バッジはまだありません。クイズに挑戦して獲得しよう！</p>';
+            badgesContainer.classList.add('empty-badges');
+        }
+
+        // Sort by worst accuracy first
         peopleStats.sort((a, b) => {
             if (a.correctRate !== b.correctRate) return a.correctRate - b.correctRate;
             return b.wrong - a.wrong;
@@ -306,6 +510,54 @@ document.addEventListener('DOMContentLoaded', () => {
         statsModal.classList.remove('hidden');
     }
 
+    // --- Network Graph ---
+    function openNetwork() {
+        networkModal.classList.remove('hidden');
+        if (people.length === 0) {
+            networkGraphContainer.innerHTML = '<p style="text-align:center; padding-top: 50px;">登録データがありません</p>';
+            return;
+        }
+
+        const isDark = htmlElement.getAttribute('data-theme') === 'dark';
+        
+        const nodes = new vis.DataSet(people.map(p => ({
+            id: p.id,
+            label: p.name,
+            title: p.affiliation || '所属なし',
+            shape: 'dot',
+            size: 20,
+            color: { background: '#b5c7d3', border: '#98b0c0' },
+            font: { color: isDark ? '#fff' : '#4a4a4a' }
+        })));
+
+        const edgesArray = [];
+        people.forEach(p => {
+            if (p.connections) {
+                p.connections.forEach(cid => {
+                    // avoid duplicate edges
+                    const edgeExists = edgesArray.find(e => (e.from === p.id && e.to === cid) || (e.from === cid && e.to === p.id));
+                    if (!edgeExists) {
+                        edgesArray.push({ from: p.id, to: cid, color: isDark ? '#555' : '#e8e6e1' });
+                    }
+                });
+            }
+        });
+        const edges = new vis.DataSet(edgesArray);
+
+        const data = { nodes, edges };
+        const options = {
+            physics: {
+                stabilization: false,
+                barnesHut: { springLength: 200 }
+            }
+        };
+
+        if (networkInstance) {
+            networkInstance.destroy();
+        }
+        networkInstance = new vis.Network(networkGraphContainer, data, options);
+    }
+
     // --- AI Quiz Logic ---
     function openQuiz() {
         if (people.length < 2 || !apiKey) {
@@ -315,7 +567,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             quizStateError.classList.add('hidden');
             quizContainer.classList.add('hidden');
-            quizModal.classList.remove('hidden');
             generateQuiz();
         }
         quizModal.classList.remove('hidden');
@@ -330,6 +581,12 @@ document.addEventListener('DOMContentLoaded', () => {
         quizChoices.innerHTML = '';
         quizHintsList.innerHTML = '';
         showNextHintBtn.classList.add('hidden');
+        comboDisplay.classList.add('hidden');
+        
+        if (currentCombo > 0) {
+            comboCountSpan.textContent = currentCombo;
+            comboDisplay.classList.remove('hidden');
+        }
         
         const targetIndex = Math.floor(Math.random() * people.length);
         currentQuizPerson = people[targetIndex];
@@ -354,19 +611,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error?.message || `HTTP error! status: ${response.status}`);
+                throw new Error(errorData.error?.message || \`HTTP error! status: \${response.status}\`);
             }
 
             const data = await response.json();
             const text = data.candidates[0].content.parts[0].text;
             
-            // Parse hints
             currentHints = text.split('\n').map(line => line.replace(/^[-*•]\s*/, '').trim()).filter(line => line);
             if (currentHints.length === 0) throw new Error('AIがヒントを生成できませんでした。');
             
             currentHintIndex = 0;
             
-            // Generate Choices
             let choices = [currentQuizPerson];
             let availableWrong = people.filter(p => p.id !== currentQuizPerson.id);
             availableWrong.sort(() => 0.5 - Math.random());
@@ -385,12 +640,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             quizLoading.classList.add('hidden');
             quizContainer.classList.remove('hidden');
-            showNextHint(); // Show first hint
+            showNextHint(); 
 
         } catch (error) {
             console.error(error);
             quizLoading.classList.add('hidden');
-            quizStateError.querySelector('p').textContent = `エラー: ${error.message}`;
+            quizStateError.querySelector('p').textContent = \`エラー: \${error.message}\`;
             quizStateError.classList.remove('hidden');
         }
     }
@@ -401,52 +656,51 @@ document.addEventListener('DOMContentLoaded', () => {
             li.textContent = currentHints[currentHintIndex];
             quizHintsList.appendChild(li);
             currentHintIndex++;
-            
-            if (currentHintIndex >= currentHints.length) {
-                showNextHintBtn.classList.add('hidden');
-            } else {
-                showNextHintBtn.classList.remove('hidden');
-            }
+            if (currentHintIndex >= currentHints.length) showNextHintBtn.classList.add('hidden');
+            else showNextHintBtn.classList.remove('hidden');
         }
     }
 
     function handleQuizChoice(btn, selectedId) {
         const allBtns = quizChoices.querySelectorAll('.quiz-choice-btn');
         allBtns.forEach(b => b.disabled = true);
-        showNextHintBtn.classList.add('hidden'); // Disable hints
+        showNextHintBtn.classList.add('hidden'); 
         
-        // Ensure all hints are shown when answered
-        while (currentHintIndex < currentHints.length) {
-            showNextHint();
-        }
+        while (currentHintIndex < currentHints.length) showNextHint();
         showNextHintBtn.classList.add('hidden');
 
         const isCorrect = (selectedId === currentQuizPerson.id);
         
-        // Log Stats
-        if (!stats[currentQuizPerson.id]) stats[currentQuizPerson.id] = { correct: 0, wrong: 0 };
+        if (!stats.people[currentQuizPerson.id]) stats.people[currentQuizPerson.id] = { correct: 0, wrong: 0 };
+        if (!stats.global) stats.global = { maxCombo: 0 };
+
         if (isCorrect) {
-            stats[currentQuizPerson.id].correct++;
-        } else {
-            stats[currentQuizPerson.id].wrong++;
-        }
-        saveStats();
-        
-        if (isCorrect) {
+            stats.people[currentQuizPerson.id].correct++;
+            currentCombo++;
+            if (currentCombo > stats.global.maxCombo) stats.global.maxCombo = currentCombo;
+            
             btn.classList.add('correct');
             quizResult.className = 'quiz-result success';
-            quizResultMessage.textContent = '🎉 正解！';
+            quizResultMessage.innerHTML = \`🎉 正解！ <span style="font-size:1rem; color:#b8860b; margin-left:10px;"><i class="fa-solid fa-fire"></i> \${currentCombo} Combo!</span>\`;
             quizResultDetail.textContent = 'バッチリですね！';
+            
+            comboCountSpan.textContent = currentCombo;
+            comboDisplay.classList.remove('hidden');
         } else {
+            stats.people[currentQuizPerson.id].wrong++;
+            currentCombo = 0; 
+            comboDisplay.classList.add('hidden');
+            
             btn.classList.add('wrong');
             allBtns.forEach(b => {
                 if (b.textContent === currentQuizPerson.name) b.classList.add('correct');
             });
             quizResult.className = 'quiz-result error';
             quizResultMessage.textContent = '😢 残念…';
-            quizResultDetail.textContent = `正解は「${currentQuizPerson.name}」さんでした！`;
+            quizResultDetail.textContent = \`正解は「\${currentQuizPerson.name}」さんでした！\`;
         }
         
+        saveStats();
         quizResult.classList.remove('hidden');
     }
 });
