@@ -262,6 +262,11 @@
                     <input type="password" id="apiKey" placeholder="AIの利用に必要なAPIキーを入力">
                     <small class="help-text">Google AI Studioから無料で取得できます。このキーはブラウザにのみ保存されます。</small>
                 </div>
+                <div class="form-group">
+                    <label for="aiModel">AIモデル</label>
+                    <input type="text" id="aiModel" value="gemini-1.5-flash" placeholder="例: gemini-1.5-flash">
+                    <small class="help-text">利用制限(Quota exceeded)が出る場合は「gemini-1.5-flash」や「gemini-2.0-flash-exp」をお試しください。</small>
+                </div>
                 <button type="submit" class="btn-primary btn-full">保存する</button>
             </form>
         </div>

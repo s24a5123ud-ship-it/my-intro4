@@ -377,11 +377,9 @@ main {
 .network-content {
     max-width: 90%;
     height: 80vh;
-    display: flex;
-    flex-direction: column;
 }
 .network-graph-container {
-    flex: 1;
+    height: calc(100% - 70px);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     background-color: var(--bg-color);

@@ -48,6 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeSettingsModal = document.getElementById('closeSettingsModal');
     const settingsForm = document.getElementById('settingsForm');
     const apiKeyInput = document.getElementById('apiKey');
+    const aiModelInput = document.getElementById('aiModel');
 
     // Quiz Elements
     const quizModal = document.getElementById('quizModal');
@@ -70,6 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let people = JSON.parse(localStorage.getItem('namelink_people_v4')) || [];
     let stats = JSON.parse(localStorage.getItem('namelink_stats_v4')) || { people: {}, global: { maxCombo: 0 } };
     let apiKey = localStorage.getItem('namelink_gemini_apikey') || '';
+    let aiModel = localStorage.getItem('namelink_gemini_model') || 'gemini-1.5-flash';
     
     let currentDetailId = null;
     let currentQuizPerson = null;
@@ -324,13 +326,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Settings ---
     function openSettings() {
         apiKeyInput.value = apiKey;
+        aiModelInput.value = aiModel;
         settingsModal.classList.remove('hidden');
     }
 
     function handleSettingsSubmit(e) {
         e.preventDefault();
         apiKey = apiKeyInput.value.trim();
+        aiModel = aiModelInput.value.trim() || 'gemini-1.5-flash';
         localStorage.setItem('namelink_gemini_apikey', apiKey);
+        localStorage.setItem('namelink_gemini_model', aiModel);
         closeModals();
         alert('設定を保存しました。');
     }
@@ -353,7 +358,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${aiModel}:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -603,7 +608,7 @@ document.addEventListener('DOMContentLoaded', () => {
             特徴: ${currentQuizPerson.features || '特になし'}
             `;
 
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${aiModel}:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
