@@ -611,7 +611,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error?.message || \`HTTP error! status: \${response.status}\`);
+                throw new Error(errorData.error?.message || `HTTP error! status: ${response.status}`);
             }
 
             const data = await response.json();
@@ -645,7 +645,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error(error);
             quizLoading.classList.add('hidden');
-            quizStateError.querySelector('p').textContent = \`エラー: \${error.message}\`;
+            quizStateError.querySelector('p').textContent = `エラー: ${error.message}`;
             quizStateError.classList.remove('hidden');
         }
     }
@@ -681,7 +681,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             btn.classList.add('correct');
             quizResult.className = 'quiz-result success';
-            quizResultMessage.innerHTML = \`🎉 正解！ <span style="font-size:1rem; color:#b8860b; margin-left:10px;"><i class="fa-solid fa-fire"></i> \${currentCombo} Combo!</span>\`;
+            quizResultMessage.innerHTML = `🎉 正解！ <span style="font-size:1rem; color:#b8860b; margin-left:10px;"><i class="fa-solid fa-fire"></i> ${currentCombo} Combo!</span>`;
             quizResultDetail.textContent = 'バッチリですね！';
             
             comboCountSpan.textContent = currentCombo;
@@ -697,7 +697,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             quizResult.className = 'quiz-result error';
             quizResultMessage.textContent = '😢 残念…';
-            quizResultDetail.textContent = \`正解は「\${currentQuizPerson.name}」さんでした！\`;
+            quizResultDetail.textContent = `正解は「${currentQuizPerson.name}」さんでした！`;
         }
         
         saveStats();
