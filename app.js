@@ -10,6 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const statsBtn = document.getElementById('statsBtn');
     const networkBtn = document.getElementById('networkBtn');
     const settingsBtn = document.getElementById('settingsBtn');
+    const firstAddBtn = document.getElementById('firstAddBtn');
+    const tutorialAddBtn = document.getElementById('tutorialAddBtn');
     
     // Add/Edit Modal
     const addModal = document.getElementById('addModal');
@@ -111,6 +113,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Event Listeners ---
     themeToggleBtn.addEventListener('click', toggleTheme);
     addBtn.addEventListener('click', () => openAddModal());
+    firstAddBtn.addEventListener('click', () => openAddModal());
+    tutorialAddBtn.addEventListener('click', () => {
+        openAddModal();
+        nameInput.value = '山田 太郎';
+        originInput.value = '東京都';
+        affiliationInput.value = '〇〇株式会社 営業部';
+        featuresInput.value = 'カレー好きのエンジニア。週末は草野球をしているらしい。';
+    });
     quizBtn.addEventListener('click', openQuiz);
     statsBtn.addEventListener('click', openStats);
     networkBtn.addEventListener('click', openNetwork);
