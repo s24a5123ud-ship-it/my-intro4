@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let people = JSON.parse(localStorage.getItem('namelink_people_v4')) || [];
     let stats = JSON.parse(localStorage.getItem('namelink_stats_v4')) || { people: {}, global: { maxCombo: 0 } };
     let apiKey = 'AQ.Ab8RN6JCT' + '2Uw5hPqNHCdzud' + 'zedv56xS3jo_wYZzrGt9ZTPrMDw';
-    let aiModel = 'gemini-1.5-flash';
+    let aiModel = 'gemini-2.0-flash';
     
     let currentDetailId = null;
     let currentQuizPerson = null;
