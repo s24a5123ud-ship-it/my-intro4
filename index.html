@@ -10,6 +10,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- vis-network for graph -->
     <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <!-- Driver.js for tutorial -->
+    <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css"/>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -24,7 +27,6 @@
                 <button id="themeToggleBtn" class="btn-icon" title="ダークモード切替"><i class="fa-solid fa-moon"></i></button>
                 <button id="networkBtn" class="btn-icon" title="ネットワーク図"><i class="fa-solid fa-project-diagram"></i></button>
                 <button id="statsBtn" class="btn-icon" title="成績データ"><i class="fa-solid fa-chart-simple"></i></button>
-                <button id="settingsBtn" class="btn-icon" title="API設定"><i class="fa-solid fa-gear"></i></button>
                 <button id="quizBtn" class="btn-secondary"><i class="fa-solid fa-dice"></i> クイズ</button>
                 <button id="addBtn" class="btn-primary"><i class="fa-solid fa-plus"></i> 追加</button>
             </div>
@@ -88,8 +90,8 @@
 
             <form id="personForm">
                 <div class="form-group">
-                    <label for="name">名前 <span class="required">*</span></label>
-                    <input type="text" id="name" required placeholder="例: 山田 太郎">
+                    <label for="name">名前 <span class="text-light" style="font-size:0.8rem; font-weight:normal;">(後から本名に変更可能)</span></label>
+                    <input type="text" id="name" placeholder="例: 赤いメガネの人、7/1のイベント主催者">
                 </div>
                 <div class="form-group">
                     <label for="origin">出身</label>
@@ -99,9 +101,10 @@
                     <label for="affiliation">所属</label>
                     <input type="text" id="affiliation" placeholder="例: 〇〇株式会社 営業部 / テニスサークル">
                 </div>
-                <div class="form-group">
-                    <label for="features">その人の特徴</label>
-                    <textarea id="features" rows="4" placeholder="例: コーヒーが好き。いつも笑顔で挨拶してくれる。"></textarea>
+                <div class="form-group" style="position: relative;">
+                    <label for="features">その人の特徴・タグ</label>
+                    <textarea id="features" rows="4" placeholder="例: #エンジニア コーヒーが好き。"></textarea>
+                    <div id="tagSuggestions" class="tag-suggestions hidden"></div>
                 </div>
                 <div class="form-group">
                     <label>繋がり（関係のある人）</label>
@@ -246,26 +249,7 @@
         </div>
     </div>
 
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="modal hidden">
-        <div class="modal-content">
-            <span class="close-btn" id="closeSettingsModal">&times;</span>
-            <h2><i class="fa-solid fa-gear"></i> 設定</h2>
-            <form id="settingsForm">
-                <div class="form-group">
-                    <label for="apiKey">Gemini API キー</label>
-                    <input type="password" id="apiKey" placeholder="AIの利用に必要なAPIキーを入力">
-                    <small class="help-text">Google AI Studioから無料で取得できます。このキーはブラウザにのみ保存されます。</small>
-                </div>
-                <div class="form-group">
-                    <label for="aiModel">AIモデル</label>
-                    <input type="text" id="aiModel" value="gemini-1.5-flash" placeholder="例: gemini-1.5-flash">
-                    <small class="help-text">利用制限(Quota exceeded)が出る場合は「gemini-1.5-flash」や「gemini-2.0-flash-exp」をお試しください。</small>
-                </div>
-                <button type="submit" class="btn-primary btn-full">保存する</button>
-            </form>
-        </div>
-    </div>
+    <!-- Settings Modal Removed -->
 
     <script src="app.js"></script>
 </body>

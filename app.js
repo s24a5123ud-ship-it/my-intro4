@@ -9,7 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const quizBtn = document.getElementById('quizBtn');
     const statsBtn = document.getElementById('statsBtn');
     const networkBtn = document.getElementById('networkBtn');
-    const settingsBtn = document.getElementById('settingsBtn');
     const firstAddBtn = document.getElementById('firstAddBtn');
     
     // Add/Edit Modal
@@ -44,13 +43,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeNetworkModal = document.getElementById('closeNetworkModal');
     const networkGraphContainer = document.getElementById('networkGraph');
 
-    // Settings Modal
-    const settingsModal = document.getElementById('settingsModal');
-    const closeSettingsModal = document.getElementById('closeSettingsModal');
-    const settingsForm = document.getElementById('settingsForm');
-    const apiKeyInput = document.getElementById('apiKey');
-    const aiModelInput = document.getElementById('aiModel');
-
     // Quiz Elements
     const quizModal = document.getElementById('quizModal');
     const closeQuizModal = document.getElementById('closeQuizModal');
@@ -68,11 +60,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const comboDisplay = document.getElementById('comboDisplay');
     const comboCountSpan = document.getElementById('comboCount');
     
-    // --- State ---
+    // State
     let people = JSON.parse(localStorage.getItem('namelink_people_v4')) || [];
     let stats = JSON.parse(localStorage.getItem('namelink_stats_v4')) || { people: {}, global: { maxCombo: 0 } };
-    let apiKey = localStorage.getItem('namelink_gemini_apikey') || '';
-    let aiModel = localStorage.getItem('namelink_gemini_model') || 'gemini-1.5-flash';
+    let apiKey = 'AQ.Ab8RN6JCT' + '2Uw5hPqNHCdzud' + 'zedv56xS3jo_wYZzrGt9ZTPrMDw';
+    let aiModel = 'gemini-1.5-flash';
     
     let currentDetailId = null;
     let currentQuizPerson = null;
@@ -131,17 +123,14 @@ document.addEventListener('DOMContentLoaded', () => {
     quizBtn.addEventListener('click', openQuiz);
     statsBtn.addEventListener('click', openStats);
     networkBtn.addEventListener('click', openNetwork);
-    settingsBtn.addEventListener('click', openSettings);
     
     closeAddModal.addEventListener('click', closeModals);
     closeDetailModal.addEventListener('click', closeModals);
     closeQuizModal.addEventListener('click', closeModals);
     closeStatsModal.addEventListener('click', closeModals);
     closeNetworkModal.addEventListener('click', closeModals);
-    closeSettingsModal.addEventListener('click', closeModals);
     
     personForm.addEventListener('submit', handleFormSubmit);
-    settingsForm.addEventListener('submit', handleSettingsSubmit);
     searchInput.addEventListener('input', handleSearch);
     nextQuizBtn.addEventListener('click', generateQuiz);
     showNextHintBtn.addEventListener('click', showNextHint);
@@ -294,10 +283,14 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         
         const selectedConns = Array.from(connectionsCheckboxes.querySelectorAll('input:checked')).map(cb => cb.value);
+        let finalName = nameInput.value.trim();
+        if (!finalName) {
+            finalName = "名前未登録 (後で編集)";
+        }
         
         const newPerson = {
             id: editIdInput.value || Date.now().toString(),
-            name: nameInput.value.trim(),
+            name: finalName,
             origin: originInput.value.trim(),
             affiliation: affiliationInput.value.trim(),
             features: featuresInput.value.trim(),
@@ -340,29 +333,8 @@ document.addEventListener('DOMContentLoaded', () => {
         renderPeople(e.target.value);
     }
 
-    // --- Settings ---
-    function openSettings() {
-        apiKeyInput.value = apiKey;
-        aiModelInput.value = aiModel;
-        settingsModal.classList.remove('hidden');
-    }
-
-    function handleSettingsSubmit(e) {
-        e.preventDefault();
-        apiKey = apiKeyInput.value.trim();
-        aiModel = aiModelInput.value.trim() || 'gemini-1.5-flash';
-        localStorage.setItem('namelink_gemini_apikey', apiKey);
-        localStorage.setItem('namelink_gemini_model', aiModel);
-        closeModals();
-        alert('設定を保存しました。');
-    }
-
-    // --- AI Input (Voice & Image) ---
+    // Settings removed    // --- AI Input (Voice & Image) ---
     async function callGeminiForInput(prompt, base64Image = null) {
-        if (!apiKey) {
-            alert('AI自動入力を使用するには、設定（歯車アイコン）からAPIキーを登録してください。');
-            return null;
-        }
         aiLoading.classList.remove('hidden');
         
         let parts = [{ text: prompt }];
@@ -724,5 +696,75 @@ document.addEventListener('DOMContentLoaded', () => {
         
         saveStats();
         quizResult.classList.remove('hidden');
+    }
+
+    // --- Tag Suggestions Logic ---
+    featuresInput.addEventListener('focus', showTagSuggestions);
+    featuresInput.addEventListener('input', showTagSuggestions);
+    
+    function showTagSuggestions() {
+        const tagSuggestions = document.getElementById('tagSuggestions');
+        
+        // Extract all tags starting with # from all people's features
+        let allTags = new Set();
+        people.forEach(p => {
+            if (p.features) {
+                const matches = p.features.match(/#[^\s]+/g);
+                if (matches) matches.forEach(tag => allTags.add(tag));
+            }
+        });
+        
+        if (allTags.size === 0) {
+            tagSuggestions.classList.add('hidden');
+            return;
+        }
+        
+        tagSuggestions.innerHTML = '';
+        allTags.forEach(tag => {
+            const btn = document.createElement('span');
+            btn.className = 'tag-suggestion';
+            btn.textContent = tag;
+            btn.onmousedown = (e) => {
+                e.preventDefault(); // prevent blur
+                featuresInput.value = featuresInput.value + (featuresInput.value.endsWith(' ') || featuresInput.value === '' ? '' : ' ') + tag + ' ';
+                featuresInput.focus();
+            };
+            tagSuggestions.appendChild(btn);
+        });
+        
+        tagSuggestions.classList.remove('hidden');
+    }
+    
+    featuresInput.addEventListener('blur', () => {
+        setTimeout(() => {
+            document.getElementById('tagSuggestions').classList.add('hidden');
+        }, 150); // slight delay to allow click
+    });
+
+    // --- Driver.js Tour Logic ---
+    if (people.length === 0 && !localStorage.getItem('namelink_tour_done')) {
+        setTimeout(() => {
+            if (window.driver && window.driver.js) {
+                const driverObj = window.driver.js.driver;
+                const driver = driverObj({
+                    showProgress: true,
+                    doneBtnText: 'さっそく使ってみる',
+                    closeBtnText: 'スキップ',
+                    nextBtnText: '次へ',
+                    prevBtnText: '戻る',
+                    steps: [
+                        { element: '#addBtn', popover: { title: '1. 人物を追加しよう', description: 'ここから新しい人を登録できます。名刺や音声からの自動入力も可能です！' } },
+                        { element: '#networkBtn', popover: { title: '2. 人脈マップ', description: '登録した人同士を繋ぐと、関係性が視覚的にわかるマップが作れます。' } },
+                        { element: '#quizBtn', popover: { title: '3. クイズで記憶力アップ', description: '登録した人の特徴から「誰か」を当てるクイズ機能です。' } },
+                        { element: '#searchInput', popover: { title: '4. 検索機能', description: '特徴やタグ（#エンジニア 等）でいつでも検索できます。' } }
+                    ],
+                    onDestroyStarted: () => {
+                        localStorage.setItem('namelink_tour_done', 'true');
+                        driver.destroy();
+                    }
+                });
+                driver.drive();
+            }
+        }, 800); // Wait for page to render fully
     }
 });

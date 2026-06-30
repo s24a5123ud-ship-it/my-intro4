@@ -789,3 +789,35 @@ main {
         max-width: 100%;
     }
 }
+
+.tag-suggestions {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    right: 0;
+    max-height: 150px;
+    overflow-y: auto;
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 8px;
+    box-shadow: var(--shadow-md);
+    z-index: 1000;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+.tag-suggestion {
+    background: var(--bg-color);
+    color: var(--primary-color);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+}
+.tag-suggestion:hover {
+    background: var(--primary-color);
+    color: white;
+}
