@@ -241,27 +241,43 @@ main {
     color: var(--text-light);
 }
 
-.empty-state > i {
-    font-size: 3rem;
-    margin-bottom: 16px;
-    color: var(--border-color);
+.tutorial-step {
+    animation: fadeIn 0.5s ease-in-out;
 }
-
-.sample-cards-preview {
-    margin-top: 40px;
-    text-align: left;
-    border-top: 1px dashed var(--border-color);
-    padding-top: 30px;
+.tutorial-icon {
+    font-size: 4rem;
+    margin-bottom: 24px;
+    color: var(--primary-color);
 }
-.sample-title {
-    font-weight: 700;
+.tutorial-heading {
+    font-size: 1.5rem;
     margin-bottom: 16px;
     color: var(--text-main);
 }
-.sample-grid {
-    opacity: 0.5;
-    pointer-events: none;
-    filter: grayscale(0.5);
+.tutorial-text {
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 32px;
+}
+.tutorial-dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 32px;
+}
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--border-color);
+    transition: background-color 0.3s;
+}
+.dot.active {
+    background-color: var(--primary-color);
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .hidden {

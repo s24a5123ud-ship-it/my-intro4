@@ -11,7 +11,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const networkBtn = document.getElementById('networkBtn');
     const settingsBtn = document.getElementById('settingsBtn');
     const firstAddBtn = document.getElementById('firstAddBtn');
-    const tutorialAddBtn = document.getElementById('tutorialAddBtn');
     
     // Add/Edit Modal
     const addModal = document.getElementById('addModal');
@@ -114,12 +113,20 @@ document.addEventListener('DOMContentLoaded', () => {
     themeToggleBtn.addEventListener('click', toggleTheme);
     addBtn.addEventListener('click', () => openAddModal());
     firstAddBtn.addEventListener('click', () => openAddModal());
-    tutorialAddBtn.addEventListener('click', () => {
-        openAddModal();
-        nameInput.value = '山田 太郎';
-        originInput.value = '東京都';
-        affiliationInput.value = '〇〇株式会社 営業部';
-        featuresInput.value = 'カレー好きのエンジニア。週末は草野球をしているらしい。';
+    
+    document.querySelectorAll('.next-tutorial-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const nextId = e.currentTarget.getAttribute('data-next');
+            document.querySelectorAll('.tutorial-step').forEach(step => {
+                step.classList.add('hidden');
+                step.classList.remove('active');
+            });
+            const nextStep = document.getElementById('tutorialStep' + nextId);
+            if (nextStep) {
+                nextStep.classList.remove('hidden');
+                nextStep.classList.add('active');
+            }
+        });
     });
     quizBtn.addEventListener('click', openQuiz);
     statsBtn.addEventListener('click', openStats);

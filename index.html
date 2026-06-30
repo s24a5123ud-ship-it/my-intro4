@@ -33,43 +33,34 @@
 
     <main>
         <div id="emptyState" class="empty-state hidden">
-            <i class="fa-regular fa-address-book"></i>
-            <p>まだ誰も登録されていません。<br>右上の「追加」ボタンから登録しましょう。</p>
-            <button id="firstAddBtn" class="btn-primary btn-large" style="margin-top: 20px; font-size: 1.1rem; padding: 12px 30px; box-shadow: var(--shadow-md); animation: pulse 2s infinite;"><i class="fa-solid fa-plus"></i> 最初の1人を登録する</button>
+            <div id="tutorialStep1" class="tutorial-step active">
+                <i class="fa-solid fa-camera-retro tutorial-icon"></i>
+                <h3 class="tutorial-heading">名刺やSNS画像からAI入力！</h3>
+                <p class="tutorial-text">「画像から入力」を使えば、AIが文字を読み取り<br>全自動でプロフィールを登録してくれます。</p>
+                <div class="tutorial-dots">
+                    <span class="dot active"></span><span class="dot"></span><span class="dot"></span>
+                </div>
+                <button class="btn-secondary next-tutorial-btn" data-next="2">次へ <i class="fa-solid fa-arrow-right"></i></button>
+            </div>
             
-            <div class="sample-cards-preview">
-                <p class="sample-title">例えばこんな風に使えます：</p>
-                <div class="people-grid sample-grid">
-                    <div class="card sample-card">
-                        <div class="card-header">
-                            <div class="avatar">山</div>
-                            <div>
-                                <div class="card-name">山田 太郎</div>
-                                <div class="card-subtitle">〇〇株式会社 営業部</div>
-                            </div>
-                        </div>
-                        <div class="card-tags">
-                            <span class="tag">東京都</span>
-                        </div>
-                        <p class="sample-feature">カレー好きのエンジニア。週末は草野球をしているらしい。</p>
-                    </div>
-                    <div class="card sample-card">
-                        <div class="card-header">
-                            <div class="avatar" style="background-color: #d1b5d3;">S</div>
-                            <div>
-                                <div class="card-name">Sato Hanako</div>
-                                <div class="card-subtitle">フリーランス デザイナー</div>
-                            </div>
-                        </div>
-                        <div class="card-tags">
-                            <span class="tag">大阪府</span>
-                        </div>
-                        <p class="sample-feature">猫を3匹飼っている。青色がテーマカラー。</p>
-                    </div>
+            <div id="tutorialStep2" class="tutorial-step hidden">
+                <i class="fa-solid fa-microphone tutorial-icon"></i>
+                <h3 class="tutorial-heading">歩きながら音声メモ！</h3>
+                <p class="tutorial-text">「音声で入力」を使えば、スマホに話しかけるだけで<br>AIが情報を整理して入力してくれます。</p>
+                <div class="tutorial-dots">
+                    <span class="dot"></span><span class="dot active"></span><span class="dot"></span>
                 </div>
-                <div style="text-align: center; margin-top: 24px; position: relative; z-index: 10;">
-                    <button id="tutorialAddBtn" class="btn-secondary" style="font-weight: bold;"><i class="fa-solid fa-wand-magic-sparkles"></i> このサンプルを真似して登録する</button>
+                <button class="btn-secondary next-tutorial-btn" data-next="3">次へ <i class="fa-solid fa-arrow-right"></i></button>
+            </div>
+            
+            <div id="tutorialStep3" class="tutorial-step hidden">
+                <i class="fa-solid fa-project-diagram tutorial-icon"></i>
+                <h3 class="tutorial-heading">人脈マップ ＆ クイズ機能！</h3>
+                <p class="tutorial-text">知り合い同士を紐付けると、相関図（マップ）が完成！<br>顔と名前を覚えるためのクイズ機能も搭載しています。</p>
+                <div class="tutorial-dots">
+                    <span class="dot"></span><span class="dot"></span><span class="dot active"></span>
                 </div>
+                <button id="firstAddBtn" class="btn-primary btn-large" style="margin-top: 20px; font-size: 1.1rem; padding: 12px 30px; box-shadow: var(--shadow-md); animation: pulse 2s infinite;"><i class="fa-solid fa-plus"></i> さっそく最初の1人を登録する</button>
             </div>
         </div>
         <div id="peopleGrid" class="people-grid">
